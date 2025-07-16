@@ -1,1 +1,44 @@
+import cv2
+import time
+import mediapipe as mp
 
+cap = cv2.Videocapture(0) #0 demek mevcut kamerayı kullan demek
+mpHand = mp.solutions.hands
+
+hands = mpHand.Hands()
+
+mpDraw = mp.solutions.drawing_utils
+cTime = 0
+pTime = 0
+
+
+while True:
+  success, img = cap.read() #videodaki her frame img oluyor, success ise videonun çalışma durumu True False olarak
+  imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+  results = hands.process(imgRGB)
+  print(results.multi_hand_landmarks) # multi_hand_landmarks sayesinde elimiz kameraya girdiğinde elimizin koordinatları output olur, el kamerada yoksa output None olur
+
+  if results.multi_hand_landmarks: #eğer kamerada hiç el yoksa results.multi.. ifadesi None olur bu da False olacağı için bu if bloğuna girilmez
+    for handlms in results.multi_hand_landmarks:
+      mpDraw.draw_landmarks(img, handlms, mpHand.HAND_CONNECTIONS)
+
+      for id, lm in enumerate(handlms.landmark): #koordinatları lm'e, eklemlerin numarasını(kaçıncı olduğu) id'ye atılır
+        print(id, lm)
+        h, w, c = img.shape
+        cx, cy = int(lm.x * w), int(lm.y * h)
+
+        #bileğin id'si 2
+        if id == 2 
+          cv2.circle(img, (cx,cy), 9, (255,0,0) #kamera bileği görünce mavi büyük bir nokta oluşacak
+
+#fps
+cTime = time.time() #şuanki zaman
+fps = 1 / (cTime - pTime)
+pTime = cTime
+
+cv2.putText(img, "FPS:" + str(int(fps)), (10,75), cv2.FONT_HERSHEY_PLAIN, 3, (255,0,0), 5)
+
+
+  cv2.imshow("img", img)
+  cv2.waitkey(1)
