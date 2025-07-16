@@ -1,0 +1,75 @@
+import cv2
+import mediapipe as mp 
+
+cap = cv2.VideoCapture(0) #mevcut kamerayı kullan
+cap.set(3, 640)
+cap.set(4, 480)
+
+mpHand = mp.solutions.hands
+hands = mpHand.Hands()
+mpDraw = mp.solutions.drawing_utils
+
+tipIds = [4, 8, 12, 16, 20]
+
+while True:
+    success, img = cap.read() #okuduğunu img'e aktarıyor, succes de doğru olup olmadığı
+    imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    
+    results = hands.process(imgRGB)
+    print(results.multi_hand_landmarks)
+    
+    lmList = []
+    if results.multi_hand_landmarks:
+        for handLms in results.multi_hand_landmarks:
+            mpDraw.draw_landmarks(img, handLms, mpHand.HAND_CONNECTIONS)
+            
+            for id, lm in enumerate(handLms.landmark): #x,y,z koordinatlarını lm'e, 1 2 3 gibi indeksleri id'ye aktarıyor
+                h, w, c = img.shape
+                cx, cy = int(lm.x*w), int(lm.y*h)
+                lmList.append([id, cx, cy])
+                
+                #işaret uc = 8
+                if id == 8:
+                    cv2.circle(img, (cx,cy), 9, (255,0,0), cv2.FILLED)
+                #işaret parmağı =  6
+                if id == 6:
+                    cv2.circle(img, (cx,cy), 9, (0,0,255), cv2.FILLED)
+                    
+            
+    print(lmList)
+
+    if len(lmList) != 0:
+        fingers = []
+        
+        #baş parmak
+        if lmList[tipIds[0]][1] < lmList[tipIds[0] - 1][1]: #x ekseni normal. soldan sağa artar
+            fingers.append(1) #parmak havadaysa 1 , bükülmüşse 0
+        else:
+            fingers.append(0)
+        
+        
+        #dört parmak
+        for id in range(5):
+            
+            if lmList[tipIds[id]][2] < lmList[tipIds[id] - 2][2]: #OpenCV’de ve MediaPipe’de ekranın üstü y=0, altı y=artıyor şeklindedir.
+                fingers.append(1) #el dimdik havadaysa outputu 1  #Yani daha yukarıda bir noktanın y değeri daha küçüktür.
+            else:
+                finger.append(0)
+                
+         print(fingers)  
+         
+         totalF = fingers.count(1) #fingers listesinde o an kaç tane 1 olduğu yani kaç parmak havada dik
+         print(totalF)
+         
+         cv2.putText(img, str(totalF), (30,125), cv2.FONT_HERSHEY_PLAIN, 10,(255,0,0), 8) #SON ÜÇÜ BOYUT RENK KALINLIK
+         
+         if lmList[tipIds[0]][1] < lmList[tipIds[1]][1]: #baş parmak ve işaret parmağın x eksenindeki konumuna göre sol el mi sağ el mi olduğunu belirledik
+             print("sol el avuç içi")
+             
+         else:
+             print("sağ el avuç içi")
+         
+                
+    
+    cv2.imshow("img", img)
+    cv2.waitKey(1)
